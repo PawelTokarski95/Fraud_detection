@@ -1,0 +1,11 @@
+fastapi
+pydantic
+pandas
+numpy
+nltk
+datetime
+typing
+uvicorn
+newsapi
+python-dotenv
+transformers
