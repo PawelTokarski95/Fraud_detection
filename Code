@@ -1,0 +1,49 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import recall_score, precision_score, f1_score
+import xgboost as xgb
+import joblib
+import fastapi
+from pydantic import BaseModel
+
+df = pd.read_csv('C:/Users/......../creditcard.csv', sep=',')
+
+model = xgb.XGBClassifier(
+    n_estimators = 450,
+    max_depth = 7,
+    learning_rate=0.1,
+    eval_metric = 'logloss',
+    early_stopping_rounds=10
+)
+
+X = df.iloc[:, :30]
+
+y = df.iloc[:, -1]
+
+X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.3, random_state=42)
+X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
+
+model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose = True)
+
+prediction = model.predict(X_test)
+
+recall_score(y_test, prediction)
+
+precision_score(y_test, prediction)
+
+xgb_model = joblib.dump(model, 'model.pkl')
+app = fastapi.FastAPI()
+
+class Input(BaseModel):
+    features: list[float]
+
+xgb_model = joblib.load('model.pkl')
+
+@app.route('/xgb', methods=['POST'])
+def predict(data: Input):
+    X = np.array(data.features).reshape(1, -1)
+    prediction = xgb_model.predict(X)
+
+    return prediction[0]
